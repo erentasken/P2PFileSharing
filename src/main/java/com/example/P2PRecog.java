@@ -63,7 +63,7 @@ public class P2PRecog {
 
                     DirectoryNotification notification = new DirectoryNotification(0, new ArrayList<>(), new ArrayList<>());
                     notification = new DirectoryNotification(3, new ArrayList<>(), new ArrayList<>());
-                    notification = notification.parseJson(message);
+                    notification = DirectoryNotification.parseJson(message);
 
                     notification.processNotification(senderAddress, fileManager);
                     
