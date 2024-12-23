@@ -13,19 +13,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 class DirectoryFile {
     private String fileName;
     private String fileHash;
+    private String device;
 
-    // Add @JsonCreator to specify the constructor to use for deserialization
     @JsonCreator
     public DirectoryFile(
+        @JsonProperty("device") String device,
         @JsonProperty("fileName") String fileName, 
         @JsonProperty("fileHash") String fileHash
     ) {
         this.fileName = fileName;
         this.fileHash = fileHash;
+        this.device = device;
     }
 
     public String getFileName() {
@@ -35,85 +38,82 @@ class DirectoryFile {
     public String getFileHash() {
         return fileHash;
     }
+
+    public String getDevice() {
+        return device;
+    }
+
+    @Override
+    public String toString() {
+        return "DirectoryFile{" +
+                "fileName='" + fileName + '\'' +
+                ", fileHash='" + fileHash + '\'' +
+                ", device='" + device + '\'' +
+                '}';
+    }
 }
 
 class DirectoryNotification {
     private int ttl;
-    private String sourceIP;
-    private int nodeNo;
-    private int networkNo;
+    private List<String> ipAncestors;
     private List<DirectoryFile> directory;
 
-    public DirectoryNotification(int ttl, String sourceIP, int nodeNo, int networkNo, List<DirectoryFile> directory) {
+    public DirectoryNotification(int ttl, List<String> ipAncestors, List<DirectoryFile> directory) {
         this.ttl = ttl;
-        this.sourceIP = sourceIP;
-        this.nodeNo = nodeNo;
-        this.networkNo = networkNo;
+        this.ipAncestors = ipAncestors;
         this.directory = directory;
     }
 
-    public DirectoryNotification parseJson(String jsonString) {
+    public static DirectoryNotification parseJson(String jsonString) {
         ObjectMapper objectMapper = new ObjectMapper();
-        
+
         try {
-            // Parse the JSON string into a JsonNode
             JsonNode rootNode = objectMapper.readTree(jsonString);
-            
-            // Extract fields from the root node
             int ttl = rootNode.get("ttl").asInt();
-            String sourceIP = rootNode.get("sourceIP").asText();
-            int nodeNo = rootNode.get("nodeNo").asInt();
-            int networkNo = rootNode.get("networkNo").asInt();
-            
-            // Parse the directory list
+
+            List<String> ipAncestors = objectMapper.readValue(
+                rootNode.get("ipAncestors").toString(),
+                objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)
+            );
+
             List<DirectoryFile> directoryFiles = objectMapper.readValue(
                 rootNode.get("directory").toString(),
                 objectMapper.getTypeFactory().constructCollectionType(List.class, DirectoryFile.class)
             );
-            
-            // Create and return a DirectoryNotification object
-            return new DirectoryNotification(ttl, sourceIP, nodeNo, networkNo, directoryFiles);
+
+            return new DirectoryNotification(ttl, ipAncestors, directoryFiles);
+
+        } catch (JsonProcessingException e) {
+            System.err.println("Error processing JSON: " + e.getMessage());
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error reading JSON: " + e.getMessage());
         }
+
         return null;
     }
 
-    // Getters and setters
     public int getTtl() {
         return ttl;
     }
 
     public void decreaseTtl() {
-        this.ttl--;
+        if (ttl > 0) {
+            this.ttl--;
+        } else {
+            System.err.println("TTL is already zero. Cannot decrease further.");
+        }
     }
 
-    public boolean checkTtl() {
+    public boolean isTtlValid() {
         return this.ttl > 0;
     }
 
-    public String getSourceIP() {
-        return sourceIP;
+    public List<String> getIpAncestors() {
+        return ipAncestors;
     }
 
-    public void setSourceIP(String sourceIP) {
-        this.sourceIP = sourceIP;
-    }
-
-    public int getNodeNo() {
-        return nodeNo;
-    }
-
-    public void setNodeNo(int nodeNo) {
-        this.nodeNo = nodeNo;
-    }
-
-    public int getNetworkNo() {
-        return networkNo;
-    }
-
-    public void setNetworkNo(int networkNo) {
-        this.networkNo = networkNo;
+    public void addIpAncestor(String ip) {
+        this.ipAncestors.add(ip);
     }
 
     public List<DirectoryFile> getDirectory() {
@@ -122,6 +122,42 @@ class DirectoryNotification {
 
     public void setDirectory(List<DirectoryFile> directory) {
         this.directory = directory;
+    }
+
+    public void addSharedFiles(String device, FileManager fileManager) {
+        fileManager.syncFileMap();
+
+        for (Map.Entry<String, String> entry : fileManager.getFiles().entrySet()) {
+            DirectoryFile file = new DirectoryFile(device, entry.getValue(), entry.getKey());
+            this.directory.add(file);
+        }
+    }
+
+    public void processNotification(String hostIP, FileManager fileManager) {
+        addIpAncestor(hostIP);
+
+        decreaseTtl();
+
+        addSharedFiles(hostIP.split("\\.")[3],fileManager);
+    }
+
+    public String toJson() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return objectMapper.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            System.err.println("Error converting object to JSON: " + e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "DirectoryNotification{" +
+                "ttl=" + ttl +
+                ", ipAncestors=" + ipAncestors +
+                ", directory=" + directory +
+                '}';
     }
 }
 
@@ -133,7 +169,6 @@ public class FileManager {
         syncFileMap();
     }
 
-    // Calculate SHA-256 hash for the file content
     public static String calculateSHA256(byte[] fileBytes) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         digest.update(fileBytes);
@@ -147,7 +182,6 @@ public class FileManager {
         return hexString.toString();
     }
 
-    // Synchronize the file map by checking the files in the directory and their hashes
     public void syncFileMap() {
         String directoryPath = "./sharedFiles";
         Path dirPath = Path.of(directoryPath).toAbsolutePath().normalize();
@@ -165,7 +199,6 @@ public class FileManager {
             return;
         }
 
-        // Add file hashes to map
         for (File file : files) {
             if (file.isFile()) {
                 try {
@@ -178,7 +211,6 @@ public class FileManager {
             }
         }
 
-        // Remove missing files from the map
         Iterator<Map.Entry<String, String>> iterator = fileHashMap.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, String> entry = iterator.next();
@@ -191,6 +223,45 @@ public class FileManager {
 
     public HashMap<String, String> getFiles() {
         return new HashMap<>(fileHashMap);
+    }
+
+    public String buildNotificationJson(int ttl, List<String> ipAncestors) {
+        StringBuilder jsonBuilder = new StringBuilder();
+    
+        jsonBuilder.append("{\n");
+        jsonBuilder.append("  \"ttl\": ").append(ttl).append(",\n");
+        jsonBuilder.append("  \"ipAncestors\": [\n");
+    
+        for (int i = 0; i < ipAncestors.size(); i++) {
+            jsonBuilder.append("    \"").append(ipAncestors.get(i)).append("\"");
+            if (i < ipAncestors.size() - 1) {
+                jsonBuilder.append(",");
+            }
+            jsonBuilder.append("\n");
+        }
+    
+        jsonBuilder.append("  ],\n");
+        jsonBuilder.append("  \"directory\": [\n");
+    
+        Iterator<Map.Entry<String, String>> fileIterator = getFiles().entrySet().iterator();
+        while (fileIterator.hasNext()) {
+            Map.Entry<String, String> entry = fileIterator.next();
+    
+            jsonBuilder.append("    {\"fileName\": \"").append(entry.getValue())
+                .append("\", \"fileHash\": \"").append(entry.getKey())
+                .append("\", \"device\": \"").append(ipAncestors.get(0).split("\\.")[3]).append("\"}");
+    
+            if (fileIterator.hasNext()) {
+                jsonBuilder.append(",");
+            }
+    
+            jsonBuilder.append("\n");
+        }
+    
+        jsonBuilder.append("  ]\n");
+        jsonBuilder.append("}\n");
+    
+        return jsonBuilder.toString();
     }
 
     public String returnFile(String fileName, String fileHash) {
@@ -228,62 +299,33 @@ public class FileManager {
         return null;
     }
 
-    public String buildNotificationJson(int ttl, String sourceIP) {
-    StringBuilder jsonBuilder = new StringBuilder();
-    
-    // Extract nodeNo (last octet) and networkNo (third octet) from sourceIP
-    String[] ipParts = sourceIP.split("\\.");
-    int nodeNo = Integer.parseInt(ipParts[3]); // last octet is nodeNo
-    int networkNo = Integer.parseInt(ipParts[2]); // third octet is networkNo
-    
-    jsonBuilder.append("{\n");
-    jsonBuilder.append("  \"ttl\": ").append(ttl).append(",\n");
-    jsonBuilder.append("  \"sourceIP\": \"").append(sourceIP).append("\",\n");
-    jsonBuilder.append("  \"nodeNo\": ").append(nodeNo).append(",\n");
-    jsonBuilder.append("  \"networkNo\": ").append(networkNo).append(",\n");
-    jsonBuilder.append("  \"directory\": [\n");
+    // public static void main(String[] args) {
+    //     String jsonString = "{\n" +
+    //         "  \"ttl\": 3,\n" +
+    //         "  \"ipAncestors\": [\n" +
+    //         "    \"192.168.1.1\", \"192.168.1.2\"\n" +
+    //         "  ],\n" +
+    //         "  \"directory\": [\n" +
+    //         "    {\"device\": \"Device1\", \"fileName\": \"file1.txt\", \"fileHash\": \"abc123\"},\n" +
+    //         "    {\"device\": \"Device2\", \"fileName\": \"file2.txt\", \"fileHash\": \"def456\"}\n" +
+    //         "  ]\n" +
+    //         "}";
 
-    Iterator<Map.Entry<String, String>> fileIterator = getFiles().entrySet().iterator();
-    while (fileIterator.hasNext()) {
-        Map.Entry<String, String> entry = fileIterator.next();
-        jsonBuilder.append("    {\"fileName\": \"").append(entry.getValue())
-            .append("\", \"fileHash\": \"").append(entry.getKey()).append("\"}");
-        
-        // If this is not the last file, add a comma
-        if (fileIterator.hasNext()) {
-            jsonBuilder.append(",");
-        }
-        
-        jsonBuilder.append("\n");
-    }
+    //     DirectoryNotification notification = DirectoryNotification.parseJson(jsonString);
 
-    jsonBuilder.append("  ]\n");
-    jsonBuilder.append("}\n");
+    //     if (notification != null) {
+    //         System.out.println("Parsed DirectoryNotification:");
+    //         System.out.println(notification);
 
-    return jsonBuilder.toString();
-}
+    //         notification.decreaseTtl();
+    //         notification.addIpAncestor("192.168.1.3");
+    //         notification.getDirectory().forEach(file -> System.out.println(file.get));
 
-
-    public static void main(String[] args) {
-        FileManager fileManager = new FileManager();
-
-        String notificationJson = fileManager.buildNotificationJson(3, "10.10.1.30");
-
-        DirectoryNotification directoryNotification = new DirectoryNotification(0, "", 0, 0, null);
-        directoryNotification = directoryNotification.parseJson(notificationJson);
-
-        if (directoryNotification != null) {
-            System.out.println("TTL: " + directoryNotification.getTtl());
-            System.out.println("Source IP: " + directoryNotification.getSourceIP());
-            System.out.println("Node No: " + directoryNotification.getNodeNo());
-            System.out.println("Network No: " + directoryNotification.getNetworkNo());
-
-            // Print directory files
-            for (DirectoryFile file : directoryNotification.getDirectory()) {
-                System.out.println("File: " + file.getFileName() + ", Hash: " + file.getFileHash());
-            }
-        }
-
-
-    }
+    //         String outputJson = notification.toJson();
+    //         System.out.println("Updated JSON:");
+    //         System.out.println(outputJson);
+    //     } else {
+    //         System.err.println("Failed to parse the JSON string.");
+    //     }
+    // }
 }

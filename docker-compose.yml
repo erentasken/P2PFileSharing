@@ -8,18 +8,18 @@ services:
       network1:
         ipv4_address: 10.23.1.10
     volumes:
-      - ./sharedFiles:/app/sharedFiles  # Mount the sharedFiles directory
+      - ./sharedFiles:/app/sharedFiles 
     environment:
-      - JAVA_OPTS=-Dfile.encoding=UTF-8  # Optional: specify JVM options if needed
+      - JAVA_OPTS=-Dfile.encoding=UTF-8
 
   node2:
     build: .
     container_name: node2
     networks:
-      network1:
-        ipv4_address: 10.23.1.20
       network2:
         ipv4_address: 10.23.2.20
+      network3:
+        ipv4_address: 10.23.3.20
     volumes:
       - ./sharedFiles:/app/sharedFiles  # Mount the sharedFiles directory
     environment:
@@ -29,10 +29,10 @@ services:
     build: .
     container_name: node3
     networks:
-      network2:
-        ipv4_address: 10.23.2.30
       network3:
         ipv4_address: 10.23.3.30
+      network4:
+        ipv4_address: 10.23.4.30
     volumes:
       - ./sharedFiles:/app/sharedFiles  # Mount the sharedFiles directory
     environment:
@@ -42,10 +42,10 @@ services:
     build: .
     container_name: node4
     networks:
-      network3:
-        ipv4_address: 10.23.3.40
       network4:
         ipv4_address: 10.23.4.40
+      network5:
+        ipv4_address: 10.23.5.40
     volumes:
       - ./sharedFiles:/app/sharedFiles  # Mount the sharedFiles directory
     environment:
@@ -55,8 +55,6 @@ services:
     build: .
     container_name: node5
     networks:
-      network4:
-        ipv4_address: 10.23.4.50
       network5:
         ipv4_address: 10.23.5.50
     volumes:
