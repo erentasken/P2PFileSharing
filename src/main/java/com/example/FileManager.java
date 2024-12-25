@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -15,8 +15,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FileManager {
     private final Map<String, String> fileHashMap = new ConcurrentHashMap<>();
 
+    private String device;
+
     public FileManager() {
         syncFileMap();
+    }
+
+    public void setDevice(String device) {
+        this.device = device;
     }
 
     public static String calculateSHA256(byte[] fileBytes) throws NoSuchAlgorithmException {
@@ -71,46 +77,15 @@ public class FileManager {
         }
     }
 
-    public HashMap<String, String> getFiles() {
-        return new HashMap<>(fileHashMap);
-    }
+    public List<DirectoryFile> getFiles() {
 
-    public String buildNotificationJson(int ttl, List<String> ipAncestors) {
-        StringBuilder jsonBuilder = new StringBuilder();
-        jsonBuilder.append("{\n");
-        jsonBuilder.append("  \"ttl\": ").append(ttl).append(",\n");
-        jsonBuilder.append("  \"ipAncestors\": [\n");
-
-        for (int i = 0; i < ipAncestors.size(); i++) {
-            jsonBuilder.append("    \"").append(ipAncestors.get(i)).append("\"");
-            if (i < ipAncestors.size() - 1) {
-                jsonBuilder.append(",");
-            }
-            jsonBuilder.append("\n");
+        // create a list of DirectoryFile from fileHashMap 
+        List<DirectoryFile> directoryFiles = new ArrayList<DirectoryFile>();
+        for (Map.Entry<String, String> entry : fileHashMap.entrySet()) {
+            directoryFiles.add(new DirectoryFile(this.device, entry.getValue(), entry.getKey()));
         }
 
-        jsonBuilder.append("  ],\n");
-        jsonBuilder.append("  \"directory\": [\n");
-
-        Iterator<Map.Entry<String, String>> fileIterator = getFiles().entrySet().iterator();
-        while (fileIterator.hasNext()) {
-            Map.Entry<String, String> entry = fileIterator.next();
-
-            jsonBuilder.append("    {\"fileName\": \"").append(entry.getValue())
-                .append("\", \"fileHash\": \"").append(entry.getKey())
-                .append("\", \"device\": \"").append(ipAncestors.get(0).split("\\.")[3]).append("\"}");
-
-            if (fileIterator.hasNext()) {
-                jsonBuilder.append(",");
-            }
-
-            jsonBuilder.append("\n");
-        }
-
-        jsonBuilder.append("  ]\n");
-        jsonBuilder.append("}\n");
-
-        return jsonBuilder.toString();
+        return directoryFiles;
     }
 
     public String returnFile(String fileName, String fileHash) {

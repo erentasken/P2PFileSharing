@@ -6,7 +6,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 public class DirectoryNotification {
     private int ttl;
@@ -52,6 +51,10 @@ public class DirectoryNotification {
         }
     }
 
+    public void increateTTL(){ 
+        this.ttl++;
+    }
+
     public boolean isTtlValid() {
         return this.ttl > 0;
     }
@@ -74,14 +77,13 @@ public class DirectoryNotification {
 
     public void addSharedFiles(String device, FileManager fileManager) {
         fileManager.syncFileMap();
-        for (Map.Entry<String, String> entry : fileManager.getFiles().entrySet()) {
-            DirectoryFile file = new DirectoryFile(device, entry.getValue(), entry.getKey());
-            this.directory.add(file);
+        for (DirectoryFile entry : fileManager.getFiles()) {
+            this.directory.add(entry);
         }
     }
 
     public void processNotification(String hostIP, FileManager fileManager) {
-        addIpAncestor(hostIP);
+        // addIpAncestor(hostIP);
         decreaseTtl();
         addSharedFiles(hostIP.split("\\.")[3], fileManager);
     }

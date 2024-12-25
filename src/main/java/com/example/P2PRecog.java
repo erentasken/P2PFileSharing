@@ -16,18 +16,21 @@ public class P2PRecog {
 
         hostIP = InetAddress.getLocalHost().getHostAddress();
 
-        System.out.println("IP : " + hostIP);
+        fileManager.setDevice(hostIP.split("\\.")[3]);
 
         Thread listenerThread = new Thread(() -> listenBroadcast());
         listenerThread.start();
         Thread sendBroadcastThread = new Thread(
             () -> {
                 try {
-                    String notificString = fileManager.buildNotificationJson(3, Arrays.asList(hostIP));
-
                     while (true) {
                         if (hostIP.equals("10.23.2.20")) { 
-                            sendBroadcast(notificString);
+
+                            DirectoryNotification notification = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
+                            notification.processNotification(hostIP, fileManager);
+                            notification.increateTTL();
+
+                            sendBroadcast(new DirectoryNotification(3, new ArrayList<>(), new ArrayList<>()));
                             Thread.sleep(5000);
                         }
                     }
@@ -36,14 +39,6 @@ public class P2PRecog {
                 }
             });
         sendBroadcastThread.start();
-        
-        while (true) {
-            String localHostAddress = hostIP;
-            if (localHostAddress.equals("10.23.5.50")) {
-                peerManager.printSources();
-                Thread.sleep(5000);
-            }
-        }
     }
     
     public static void listenBroadcast() {
@@ -59,30 +54,35 @@ public class P2PRecog {
                 String message = new String(packet.getData(), 0, packet.getLength());
                 String senderAddress = packet.getAddress().getHostAddress();
     
-                if (!senderAddress.equals(hostIP)) {
-
+                if (!senderAddress.split("\\.")[3].equals(hostIP.split("\\.")[3])) {
                     DirectoryNotification notification = new DirectoryNotification(0, new ArrayList<>(), new ArrayList<>());
                     notification = new DirectoryNotification(3, new ArrayList<>(), new ArrayList<>());
                     notification = DirectoryNotification.parseJson(message);
 
                     notification.processNotification(senderAddress, fileManager);
-                    
+
                     peerManager.addSource(notification);
+    
+                    //Test 
+                    if (hostIP.equals("10.23.5.50")) {
+                        peerManager.printSources();
+                    }
+
 
                     if (notification.getTtl() > 0) {
-                        sendBroadcast(notification.toJson());
+                        sendBroadcast(notification);
                     }
 
                 }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
-    public static void sendBroadcast(String message) {
+
+    public static void sendBroadcast(DirectoryNotification notification) {
         try {
-            byte[] buffer = message.getBytes();
             try (DatagramSocket socket = new DatagramSocket()) {
                 socket.setBroadcast(true);
     
@@ -97,6 +97,13 @@ public class P2PRecog {
                     for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
                         InetAddress broadcastAddress = interfaceAddress.getBroadcast();
                         if (broadcastAddress != null) {
+
+                            notification.addIpAncestor(interfaceAddress.getAddress().getHostAddress());
+
+                            String message = notification.toJson();
+
+                            byte[] buffer = message.getBytes();
+
                             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, broadcastAddress, PORT);
                             socket.send(packet);
                         }
