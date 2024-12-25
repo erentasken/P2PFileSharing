@@ -13,13 +13,12 @@ public class Peer {
     }
 
 
-    public synchronized void addSource(DirectoryNotification notification) {
+    public void addSource(DirectoryNotification notification) {
         sourceList.add(notification);
     }
 
-    public synchronized void printSources() {
+    public void printSources() {
         System.out.println("\nCurrent Sources:");
-
         sourceList.forEach((source)-> {
             System.out.println("Ancestor: " + source.getIpAncestors());
             System.out.println("Files: \n");

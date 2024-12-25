@@ -79,7 +79,6 @@ public class FileManager {
 
     public List<DirectoryFile> getFiles() {
 
-        // create a list of DirectoryFile from fileHashMap 
         List<DirectoryFile> directoryFiles = new ArrayList<DirectoryFile>();
         for (Map.Entry<String, String> entry : fileHashMap.entrySet()) {
             directoryFiles.add(new DirectoryFile(this.device, entry.getValue(), entry.getKey()));
@@ -89,7 +88,7 @@ public class FileManager {
     }
 
     public String returnFile(String fileName, String fileHash) {
-        String directoryPath = "/home/eren/Desktop/Okul/471/ProjectDir/Cildircam/src/src/main/java/com/example/sharedFiles";
+        String directoryPath = "./sharedFiles";
         Path dirPath = Path.of(directoryPath);
         File directory = dirPath.toFile();
 

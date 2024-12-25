@@ -51,10 +51,6 @@ public class DirectoryNotification {
         }
     }
 
-    public void increateTTL(){ 
-        this.ttl++;
-    }
-
     public boolean isTtlValid() {
         return this.ttl > 0;
     }
@@ -83,7 +79,6 @@ public class DirectoryNotification {
     }
 
     public void processNotification(String hostIP, FileManager fileManager) {
-        // addIpAncestor(hostIP);
         decreaseTtl();
         addSharedFiles(hostIP.split("\\.")[3], fileManager);
     }

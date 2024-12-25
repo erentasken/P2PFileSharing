@@ -16,21 +16,22 @@ public class P2PRecog {
 
         hostIP = InetAddress.getLocalHost().getHostAddress();
 
+        System.out.println("Host IP: " + hostIP);
+
         fileManager.setDevice(hostIP.split("\\.")[3]);
 
         Thread listenerThread = new Thread(() -> listenBroadcast());
         listenerThread.start();
+
+        //Test
         Thread sendBroadcastThread = new Thread(
             () -> {
                 try {
                     while (true) {
-                        if (hostIP.equals("10.23.2.20")) { 
-
+                        if (hostIP.equals("10.23.2.20") || hostIP.equals("10.23.1.10")) { 
                             DirectoryNotification notification = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
-                            notification.processNotification(hostIP, fileManager);
-                            notification.increateTTL();
 
-                            sendBroadcast(new DirectoryNotification(3, new ArrayList<>(), new ArrayList<>()));
+                            sendBroadcast(notification);
                             Thread.sleep(5000);
                         }
                     }
@@ -39,6 +40,8 @@ public class P2PRecog {
                 }
             });
         sendBroadcastThread.start();
+        //
+
     }
     
     public static void listenBroadcast() {
@@ -49,7 +52,6 @@ public class P2PRecog {
                 byte[] buffer = new byte[1024];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
     
-                // Receive broadcast
                 socket.receive(packet);
                 String message = new String(packet.getData(), 0, packet.getLength());
                 String senderAddress = packet.getAddress().getHostAddress();
@@ -67,7 +69,7 @@ public class P2PRecog {
                     if (hostIP.equals("10.23.5.50")) {
                         peerManager.printSources();
                     }
-
+                    //
 
                     if (notification.getTtl() > 0) {
                         sendBroadcast(notification);

@@ -7,6 +7,8 @@ services:
     networks:
       network1:
         ipv4_address: 10.23.1.10
+      network3:
+        ipv4_address: 10.23.3.10
     volumes:
       - ./sharedFiles/node1:/app/sharedFiles
     environment:
