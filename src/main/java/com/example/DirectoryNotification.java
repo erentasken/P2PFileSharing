@@ -27,6 +27,7 @@ public class DirectoryNotification {
                 rootNode.get("ipAncestors").toString(),
                 objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)
             );
+
             List<DirectoryFile> directoryFiles = objectMapper.readValue(
                 rootNode.get("directory").toString(),
                 objectMapper.getTypeFactory().constructCollectionType(List.class, DirectoryFile.class)
@@ -34,9 +35,8 @@ public class DirectoryNotification {
 
             return new DirectoryNotification(ttl, ipAncestors, directoryFiles);
         } catch (IOException e) {
-            System.err.println("Error processing JSON: " + e.getMessage());
+            return null;
         }
-        return null;
     }
 
     public int getTtl() {
@@ -88,7 +88,7 @@ public class DirectoryNotification {
         try {
             return objectMapper.writeValueAsString(this);
         } catch (JsonProcessingException e) {
-            System.err.println("Error converting object to JSON: " + e.getMessage());
+            e.printStackTrace();  // Log the full stack trace for easier debugging
             return null;
         }
     }

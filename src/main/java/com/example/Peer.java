@@ -1,6 +1,9 @@
 package com.example;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Peer {
 
@@ -10,11 +13,21 @@ public class Peer {
     public Peer(FileManager fileManager) {
         this.sourceList = new ArrayList<>();
         this.fileManager = fileManager;
+
+
+       ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+        scheduler.scheduleAtFixedRate(() -> {
+            sourceList.clear();
+        }, 0, 7, TimeUnit.SECONDS);
+
     }
 
 
     public void addSource(DirectoryNotification notification) {
         sourceList.add(notification);
+
+
     }
 
     public void printSources() {
@@ -23,7 +36,7 @@ public class Peer {
             System.out.println("Ancestor: " + source.getIpAncestors());
             System.out.println("Files: \n");
             source.getDirectory().forEach((file) -> {
-                System.out.println("Dev : " + file.getDevice() + " | " + file.getFileName() + " : " + file.getFileHash());
+                System.out.println("Dev : " + file.getDevice() + " | " + "File size: " + file.getFileSize() + " | " + file.getFileName() + " : " + file.getFileHash());
             });
         });
     }

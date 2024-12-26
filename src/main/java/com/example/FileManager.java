@@ -7,13 +7,13 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FileManager {
-    private final Map<String, String> fileHashMap = new ConcurrentHashMap<>();
+    private final Map<String, ArrayList<String>> fileHashMap = new ConcurrentHashMap<>();
 
     private String device;
 
@@ -39,6 +39,8 @@ public class FileManager {
     }
 
     public void syncFileMap() {
+    
+    
         String directoryPath = "./sharedFiles";
         Path dirPath = Path.of(directoryPath).toAbsolutePath().normalize();
         File directory = dirPath.toFile();
@@ -55,11 +57,13 @@ public class FileManager {
             return;
         }
 
+        fileHashMap.clear();
+    
         for (File file : files) {
             if (file.isFile()) {
                 try {
                     byte[] fileBytes = Files.readAllBytes(file.toPath());
-                    fileHashMap.putIfAbsent(calculateSHA256(fileBytes), file.getName());
+                    fileHashMap.putIfAbsent(calculateSHA256(fileBytes), new ArrayList<>(Arrays.asList(file.getName(), String.valueOf(file.length()))));
                 } catch (IOException | NoSuchAlgorithmException e) {
                     System.err.println("Error processing file: " + file.getName());
                     e.printStackTrace();
@@ -67,25 +71,22 @@ public class FileManager {
             }
         }
 
-        Iterator<Map.Entry<String, String>> iterator = fileHashMap.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, String> entry = iterator.next();
-            File file = new File(directoryPath + "/" + entry.getValue());
-            if (!file.exists()) {
-                iterator.remove();
-            }
-        }
     }
 
     public List<DirectoryFile> getFiles() {
+        syncFileMap();
 
-        List<DirectoryFile> directoryFiles = new ArrayList<DirectoryFile>();
-        for (Map.Entry<String, String> entry : fileHashMap.entrySet()) {
-            directoryFiles.add(new DirectoryFile(this.device, entry.getValue(), entry.getKey()));
+        List<DirectoryFile> directoryFiles = new ArrayList<>();
+        for (Map.Entry<String, ArrayList<String>> entry : fileHashMap.entrySet()) {
+            // Assuming the first element in the ArrayList is the file name, and the second is the file length
+            String fileName = entry.getValue().get(0);
+            String fileLength = entry.getValue().get(1);
+            String fileHash = entry.getKey();
+            directoryFiles.add(new DirectoryFile(this.device, fileName, fileHash, fileLength));
         }
-
         return directoryFiles;
     }
+    
 
     public String returnFile(String fileName, String fileHash) {
         String directoryPath = "./sharedFiles";

@@ -12,6 +12,9 @@ public class P2PRecog {
 
     private static String hostIP;
 
+    private static DirectoryNotification notificationReceive;
+    private static DirectoryNotification notificationSend;
+
     public static void main(String[] args) throws UnknownHostException, InterruptedException {
 
         hostIP = InetAddress.getLocalHost().getHostAddress();
@@ -29,9 +32,12 @@ public class P2PRecog {
                 try {
                     while (true) {
                         if (hostIP.equals("10.23.2.20") || hostIP.equals("10.23.1.10")) { 
-                            DirectoryNotification notification = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
 
-                            sendBroadcast(notification);
+                             
+                            notificationSend = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
+
+                            sendBroadcast(notificationSend);
+
                             Thread.sleep(5000);
                         }
                     }
@@ -51,19 +57,23 @@ public class P2PRecog {
             while (true) {
                 byte[] buffer = new byte[1024];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-    
+
                 socket.receive(packet);
                 String message = new String(packet.getData(), 0, packet.getLength());
                 String senderAddress = packet.getAddress().getHostAddress();
     
                 if (!senderAddress.split("\\.")[3].equals(hostIP.split("\\.")[3])) {
-                    DirectoryNotification notification = new DirectoryNotification(0, new ArrayList<>(), new ArrayList<>());
-                    notification = new DirectoryNotification(3, new ArrayList<>(), new ArrayList<>());
-                    notification = DirectoryNotification.parseJson(message);
+                    notificationReceive = new DirectoryNotification(3, new ArrayList<>(), new ArrayList<>());
 
-                    notification.processNotification(senderAddress, fileManager);
+                    notificationReceive = DirectoryNotification.parseJson(message);
 
-                    peerManager.addSource(notification);
+                    if (notificationReceive == null) {
+                        continue;
+                    }
+
+                    notificationReceive.processNotification(senderAddress, fileManager);
+
+                    peerManager.addSource(notificationReceive);
     
                     //Test 
                     if (hostIP.equals("10.23.5.50")) {
@@ -71,8 +81,8 @@ public class P2PRecog {
                     }
                     //
 
-                    if (notification.getTtl() > 0) {
-                        sendBroadcast(notification);
+                    if (notificationReceive.getTtl() > 0) {
+                        sendBroadcast(notificationReceive);
                     }
 
                 }
