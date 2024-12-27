@@ -7,10 +7,6 @@
 # Compiled Java files
 *.class
 
-# Local Docker build files
-Dockerfile
-docker-compose.yml
-
 # IDE and editor configuration files
 *.iml
 *.log

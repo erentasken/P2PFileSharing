@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class FileRequestNotification implements Serializable {
-    private static final int CHUNK_SIZE = 256 * 10 ^ 3; // 256 KB
+    private static final int CHUNK_SIZE = 256 * 10; // 256 KB
 
     @JsonProperty("ttl")
     private int ttl;
@@ -75,6 +75,10 @@ public class FileRequestNotification implements Serializable {
         } else {
             return -1;
         }
+    }
+
+    public void addReceivedChunk(int chunkNo) {
+        receivedChunks.add(chunkNo);
     }
 
     public DirectoryFile getDirectoryFile() {

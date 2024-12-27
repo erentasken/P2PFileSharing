@@ -78,7 +78,6 @@ public class FileManager {
 
         List<DirectoryFile> directoryFiles = new ArrayList<>();
         for (Map.Entry<String, ArrayList<String>> entry : fileHashMap.entrySet()) {
-            // Assuming the first element in the ArrayList is the file name, and the second is the file length
             String fileName = entry.getValue().get(0);
             String fileLength = entry.getValue().get(1);
             String fileHash = entry.getKey();
@@ -145,12 +144,10 @@ public class FileManager {
                 try {
                     byte[] fileBytes = Files.readAllBytes(file.toPath());
     
-                    // Verify file hash and name
                     if (fileHash.equals(calculateSHA256(fileBytes)) && (fileName == null || fileName.equals(file.getName()))) {
                         int start = chunkIndex * chunkSize;
                         int end = Math.min(start + chunkSize, fileBytes.length);
     
-                        // Return the requested chunk
                         if (start < fileBytes.length) {
                             return Arrays.copyOfRange(fileBytes, start, end);
                         } else {
