@@ -3,55 +3,71 @@ package com.example;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class FileRequestNotification {
+public class FileRequestNotification implements Serializable {
+    private static final int CHUNK_SIZE = 256 * 10 ^ 3; // 256 KB
+
+    @JsonProperty("ttl")
     private int ttl;
-    private boolean have;
-    private DirectoryFile file;
-    private List<String> ipAncestors;
+
+    @JsonProperty("networkFile")
+    private NetworkFile file;
+
+    @JsonProperty("ipAncestors")
+    private List<String> ipAncestors = new ArrayList<>();
+
+    @JsonProperty("receivedChunks")
+    private List<Integer> receivedChunks;
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @JsonIgnore
-    private boolean ttlValid;
+    private List<Integer> unreceivedChunks;
 
-    // Constructor
-    public FileRequestNotification(int ttl, boolean have, List<String> ipAncestors, DirectoryFile file) {
+    @JsonProperty("directoryFile")
+    private DirectoryFile directoryFile;
+
+    @JsonCreator
+    public FileRequestNotification(
+            @JsonProperty("ttl") int ttl,
+            @JsonProperty("ipAncestors") List<String> ipAncestors,
+            @JsonProperty("networkFile") NetworkFile file,
+            @JsonProperty("receivedChunks") List<Integer> receivedChunks
+    ) {
         this.ttl = ttl;
-        this.have = have;
+        this.ipAncestors = ipAncestors != null ? ipAncestors : new ArrayList<>();
         this.file = file;
-        this.ipAncestors = ipAncestors;
+        this.receivedChunks = receivedChunks != null ? receivedChunks : new ArrayList<>();
+        this.unreceivedChunks = unreceivedChunks != null ? unreceivedChunks : new ArrayList<>();
+
     }
 
-    // Static method to parse JSON string into object
     public static FileRequestNotification parseJson(String jsonString) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
-            JsonNode rootNode = objectMapper.readTree(jsonString);
-            int ttl = rootNode.get("ttl").asInt();
-            boolean have = rootNode.get("have").asBoolean();
-            List<String> ipAncestors = objectMapper.readValue(
-                rootNode.get("ipAncestors").toString(),
-                objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)
-            );
-
-            DirectoryFile file = objectMapper.readValue(
-                rootNode.get("file").toString(),
-                DirectoryFile.class
-            );
-
-            return new FileRequestNotification(ttl, have, ipAncestors, file);
+            return objectMapper.readValue(jsonString, FileRequestNotification.class);
         } catch (Exception e) {
             return null;
         }
     }
 
-    // Method to decrease TTL and return the result
+    public List<Integer> getUnreceivedChunks() {
+        long fileSize = Long.parseLong(file.getFileSize());
+        int totalChunks = (int) Math.ceil((double) fileSize / CHUNK_SIZE);
+        List<Integer> unreceivedChunks = new ArrayList<>();
+        for (int i = 0; i < totalChunks; i++) {
+            if (!receivedChunks.contains(i)) {
+                unreceivedChunks.add(i);
+            }
+        }
+        return Collections.unmodifiableList(unreceivedChunks);
+    }
+
     public int decreaseTtl() {
         if (ttl > 0) {
             this.ttl--;
@@ -61,21 +77,8 @@ public class FileRequestNotification {
         }
     }
 
-    // Getters and Setters
-    public int getTtl() {
-        return ttl; // Added getter for ttl
-    }
-
-    public boolean isHave() {
-        return have;
-    }
-
-    public void setHave(boolean have) {
-        this.have = have;
-    }
-
-    public DirectoryFile getFile() {
-        return file;
+    public DirectoryFile getDirectoryFile() {
+        return file.getDirectoryFile();
     }
 
     public List<String> getIpAncestors() {
@@ -86,39 +89,35 @@ public class FileRequestNotification {
         ipAncestors.add(ip);
     }
 
-    // Convert object to JSON string
     public String toJson() {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
-            // Ensure ttl field is included
             return objectMapper.writeValueAsString(this);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();  // Log the full stack trace for easier debugging
+        } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
     }
 
     @Override
     public String toString() {
-        return "FileRequestNotification{" +
-                "ttl=" + ttl +  // Ensure ttl is printed in toString
-                ", have=" + have +
-                ", file=" + file +
-                ", ipAncestors=" + ipAncestors +
-                '}';
+        return toJson();
     }
 
-    public static void main(String[] args) {
-        try {
-            DirectoryFile directoryFile = new DirectoryFile("device123", "exampleFile.txt", "hashValue123", "1024");
+    // public static void main(String[] args) {
+    //     DirectoryFile requestedFile = new DirectoryFile("10", "hello1.txt", "72004025f7fdedd51ac6ac478a8c85b89bf01e2df8cc204a6ff64e1421265a18", "11");
+    //     NetworkFile networkFile = new NetworkFile(new ArrayList<>(), null, requestedFile, -1);
 
-            FileRequestNotification notification = new FileRequestNotification(10, true, List.of("192.168.1.1"), directoryFile);
+    //     FileRequestNotification fileRequestNotificationSent = new FileRequestNotification(
+    //         3, new ArrayList<>(), networkFile, new ArrayList<Integer>()
+    //     );
 
-            String json = notification.toJson();
-            System.out.println(json);
+    //     String jsonString = fileRequestNotificationSent.toJson();
+    //     System.out.println(jsonString);
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    //     try  {
+    //         FileRequestNotification fileRequestNotificationReceived = FileRequestNotification.parseJson(jsonString);
+    //     }catch (Exception e) {
+    //         e.printStackTrace();
+    //     }
+    // }
 }

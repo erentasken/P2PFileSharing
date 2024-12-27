@@ -123,36 +123,82 @@ public class FileManager {
         return null;
     }
 
-
-    public boolean saveFile(NetworkFile file) {
+    public byte[] getChunk(String fileName, String fileHash, int chunkIndex, int chunkSize) {
         String directoryPath = "./sharedFiles";
         Path dirPath = Path.of(directoryPath);
         File directory = dirPath.toFile();
-
+    
         if (!directory.exists() || !directory.isDirectory()) {
             System.err.println("Invalid directory: " + dirPath);
-            return false;
+            return null;
         }
-
-        try {
-            byte[] fileContent = file.getFile();  // You need to pass file content to the DirectoryFile
-
-            String calculatedHash = calculateSHA256(fileContent);
-
-            // Create a new file in the shared directory
-            Path filePath = dirPath.resolve(file.getFileName());
-            Files.write(filePath, fileContent);
-
-            // Update the file map (optional)
-            fileHashMap.putIfAbsent(calculatedHash, new ArrayList<>(Arrays.asList(file.getFileName(), String.valueOf(fileContent.length))));
-
-            System.out.println("File saved successfully: " + file.getFileName());
-            return true;
-
-        } catch (IOException | NoSuchAlgorithmException e) {
-            System.err.println("Error saving file: " + file.getFileName());
-            e.printStackTrace();
-            return false;
+    
+        File[] files = directory.listFiles();
+    
+        if (files == null || files.length == 0) {
+            System.out.println("No files found in directory: " + dirPath);
+            return null;
         }
+    
+        for (File file : files) {
+            if (file.isFile()) {
+                try {
+                    byte[] fileBytes = Files.readAllBytes(file.toPath());
+    
+                    // Verify file hash and name
+                    if (fileHash.equals(calculateSHA256(fileBytes)) && (fileName == null || fileName.equals(file.getName()))) {
+                        int start = chunkIndex * chunkSize;
+                        int end = Math.min(start + chunkSize, fileBytes.length);
+    
+                        // Return the requested chunk
+                        if (start < fileBytes.length) {
+                            return Arrays.copyOfRange(fileBytes, start, end);
+                        } else {
+                            System.err.println("Chunk index out of range for file: " + fileName);
+                            return null;
+                        }
+                    }
+    
+                } catch (IOException | NoSuchAlgorithmException e) {
+                    System.err.println("Error reading chunk from file: " + file.getName());
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
     }
+    
+
+
+    // public boolean saveFile(NetworkFile file) {
+    //     String directoryPath = "./sharedFiles";
+    //     Path dirPath = Path.of(directoryPath);
+    //     File directory = dirPath.toFile();
+
+    //     if (!directory.exists() || !directory.isDirectory()) {
+    //         System.err.println("Invalid directory: " + dirPath);
+    //         return false;
+    //     }
+
+    //     try {
+    //         byte[] fileContent = file.getFile();  // You need to pass file content to the DirectoryFile
+
+    //         String calculatedHash = calculateSHA256(fileContent);
+
+    //         // Create a new file in the shared directory
+    //         Path filePath = dirPath.resolve(file.getFileName());
+    //         Files.write(filePath, fileContent);
+
+    //         // Update the file map (optional)
+    //         fileHashMap.putIfAbsent(calculatedHash, new ArrayList<>(Arrays.asList(file.getFileName(), String.valueOf(fileContent.length))));
+
+    //         System.out.println("File saved successfully: " + file.getFileName());
+    //         return true;
+
+    //     } catch (IOException | NoSuchAlgorithmException e) {
+    //         System.err.println("Error saving file: " + file.getFileName());
+    //         e.printStackTrace();
+    //         return false;
+    //     }
+    // }
 }

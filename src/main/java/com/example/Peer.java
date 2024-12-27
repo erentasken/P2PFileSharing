@@ -47,8 +47,6 @@ public class Peer {
     
 
         }catch(Exception e) { 
-            System.out.println("zort: " +  e );
-            System.out.println("Is it null ? : " + notification );
         }
          finally {
             lock.unlock();

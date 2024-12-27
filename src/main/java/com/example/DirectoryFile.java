@@ -1,27 +1,41 @@
 package com.example;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.io.Serializable;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-public class DirectoryFile {
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+public class DirectoryFile implements Serializable {
+    @JsonProperty("fileName")
     private String fileName;
+
+    @JsonProperty("fileHash")
     private String fileHash;
+
+    @JsonProperty("device")
     private String device;
+
+    @JsonProperty("fileSize")
     private String fileSize;
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @JsonCreator
     public DirectoryFile(
-        @JsonProperty("device") String device,
-        @JsonProperty("fileName") String fileName, 
-        @JsonProperty("fileHash") String fileHash,
-        @JsonProperty("fileSize") String fileSize
+            @JsonProperty("device") String device,
+            @JsonProperty("fileName") String fileName,
+            @JsonProperty("fileHash") String fileHash,
+            @JsonProperty("fileSize") String fileSize
     ) {
-        this.fileName = fileName;
-        this.fileHash = fileHash;
-        this.device = device;
-        this.fileSize = fileSize;
+        this.fileName = fileName != null ? fileName : "";
+        this.fileHash = fileHash != null ? fileHash : "";
+        this.device = device != null ? device : "";
+        this.fileSize = fileSize != null ? fileSize : "";
     }
 
     @Override
@@ -34,29 +48,37 @@ public class DirectoryFile {
                Objects.equals(device, that.device);
     }
 
+    @JsonIgnore
     public String getFileName() {
         return fileName;
     }
 
+    @JsonIgnore
     public String getFileHash() {
         return fileHash;
     }
 
+    @JsonIgnore
     public String getDevice() {
         return device;
     }
 
+    @JsonIgnore
     public String getFileSize() {
         return fileSize;
     }
 
     @Override
     public String toString() {
-        return "DirectoryFile{" +
-                "fileName='" + fileName + '\'' +
-                ", fileHash='" + fileHash + '\'' +
-                ", device='" + device + '\'' +
-                ", fileSize='" + fileSize + '\'' +
-                '}';
+        return toJson();
+    }
+
+    public String toJson() { 
+        try {
+            return objectMapper.writeValueAsString(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
