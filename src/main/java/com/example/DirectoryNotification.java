@@ -2,15 +2,18 @@ package com.example;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import java.io.IOException;
 import java.util.List;
 
 public class DirectoryNotification {
     private int ttl;
     private List<String> ipAncestors;
     private List<DirectoryFile> directory;
+
+    @JsonIgnore
+    private boolean ttlValid;
 
     public DirectoryNotification(int ttl, List<String> ipAncestors, List<DirectoryFile> directory) {
         this.ttl = ttl;
@@ -34,7 +37,7 @@ public class DirectoryNotification {
             );
 
             return new DirectoryNotification(ttl, ipAncestors, directoryFiles);
-        } catch (IOException e) {
+        } catch (Exception e) {
             return null;
         }
     }
@@ -43,11 +46,12 @@ public class DirectoryNotification {
         return ttl;
     }
 
-    public void decreaseTtl() {
+    public int decreaseTtl() {
         if (ttl > 0) {
             this.ttl--;
+            return this.ttl;
         } else {
-            System.err.println("TTL is already zero. Cannot decrease further.");
+            return -1;
         }
     }
 
@@ -55,13 +59,7 @@ public class DirectoryNotification {
         return this.ttl > 0;
     }
 
-    public List<String> getIpAncestors() {
-        return ipAncestors;
-    }
-
-    public void addIpAncestor(String ip) {
-        this.ipAncestors.add(ip);
-    }
+    
 
     public List<DirectoryFile> getDirectory() {
         return directory;
@@ -78,8 +76,15 @@ public class DirectoryNotification {
         }
     }
 
+    public List<String> getIpAncestors() {
+        return ipAncestors;
+    }
+
+    public void addIpAncestor(String ip) {
+        this.ipAncestors.add(ip);
+    }
+
     public void processNotification(String hostIP, FileManager fileManager) {
-        decreaseTtl();
         addSharedFiles(hostIP.split("\\.")[3], fileManager);
     }
 

@@ -1,5 +1,7 @@
 package com.example;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -20,6 +22,16 @@ public class DirectoryFile {
         this.fileHash = fileHash;
         this.device = device;
         this.fileSize = fileSize;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        DirectoryFile that = (DirectoryFile) obj;
+        return Objects.equals(fileName, that.fileName) &&
+               Objects.equals(fileHash, that.fileHash) &&
+               Objects.equals(device, that.device);
     }
 
     public String getFileName() {

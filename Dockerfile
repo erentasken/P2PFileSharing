@@ -11,6 +11,7 @@ RUN mvn dependency:go-offline
 COPY src /app/src
 RUN mvn clean install
 
+
 # Stage 2: Runtime environment
 FROM openjdk:11-jre-slim
 

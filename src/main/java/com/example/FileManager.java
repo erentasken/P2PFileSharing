@@ -88,7 +88,7 @@ public class FileManager {
     }
     
 
-    public String returnFile(String fileName, String fileHash) {
+    public byte[] returnFile(String fileName, String fileHash) {
         String directoryPath = "./sharedFiles";
         Path dirPath = Path.of(directoryPath);
         File directory = dirPath.toFile();
@@ -111,7 +111,7 @@ public class FileManager {
                     byte[] fileBytes = Files.readAllBytes(file.toPath());
 
                     if (fileHash.equals(calculateSHA256(fileBytes)) && (fileName == null || fileName.equals(file.getName()))) {
-                        return Files.readString(file.toPath());
+                        return Files.readAllBytes(file.toPath());
                     }
 
                 } catch (IOException | NoSuchAlgorithmException e) {
@@ -121,5 +121,38 @@ public class FileManager {
             }
         }
         return null;
+    }
+
+
+    public boolean saveFile(NetworkFile file) {
+        String directoryPath = "./sharedFiles";
+        Path dirPath = Path.of(directoryPath);
+        File directory = dirPath.toFile();
+
+        if (!directory.exists() || !directory.isDirectory()) {
+            System.err.println("Invalid directory: " + dirPath);
+            return false;
+        }
+
+        try {
+            byte[] fileContent = file.getFile();  // You need to pass file content to the DirectoryFile
+
+            String calculatedHash = calculateSHA256(fileContent);
+
+            // Create a new file in the shared directory
+            Path filePath = dirPath.resolve(file.getFileName());
+            Files.write(filePath, fileContent);
+
+            // Update the file map (optional)
+            fileHashMap.putIfAbsent(calculatedHash, new ArrayList<>(Arrays.asList(file.getFileName(), String.valueOf(fileContent.length))));
+
+            System.out.println("File saved successfully: " + file.getFileName());
+            return true;
+
+        } catch (IOException | NoSuchAlgorithmException e) {
+            System.err.println("Error saving file: " + file.getFileName());
+            e.printStackTrace();
+            return false;
+        }
     }
 }

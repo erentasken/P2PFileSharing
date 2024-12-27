@@ -7,8 +7,6 @@ services:
     networks:
       network1:
         ipv4_address: 10.23.1.10
-      network3:
-        ipv4_address: 10.23.3.10
     volumes:
       - ./sharedFiles/node1:/app/sharedFiles
     environment:
@@ -20,8 +18,8 @@ services:
     networks:
       network2:
         ipv4_address: 10.23.2.20
-      network3:
-        ipv4_address: 10.23.3.20
+      network1:
+        ipv4_address: 10.23.1.20
     volumes:
       - ./sharedFiles/node2:/app/sharedFiles
     environment:
@@ -33,8 +31,8 @@ services:
     networks:
       network3:
         ipv4_address: 10.23.3.30
-      network4:
-        ipv4_address: 10.23.4.30
+      network2:
+        ipv4_address: 10.23.2.30
     volumes:
       - ./sharedFiles/node3:/app/sharedFiles
     environment:
@@ -46,8 +44,8 @@ services:
     networks:
       network4:
         ipv4_address: 10.23.4.40
-      network5:
-        ipv4_address: 10.23.5.40
+      network3:
+        ipv4_address: 10.23.3.40
     volumes:
       - ./sharedFiles/node4:/app/sharedFiles
     environment:
