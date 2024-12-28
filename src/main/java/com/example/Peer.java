@@ -53,6 +53,18 @@ public class Peer {
         }
     }
 
+    public ArrayList<DirectoryFile> getRequestedFile(String fileName, String fileHash) { 
+        ArrayList<DirectoryFile> requestedFiles = new ArrayList<>();
+        sourceList.forEach((s)-> {
+            s.getDirectory().forEach((file)->{ 
+                if ( file.getFileHash().equals(fileHash) && file.getFileName().equals(fileName) ) { 
+                    requestedFiles.add(file);
+                } 
+            });
+        });
+        return requestedFiles;
+    }
+
     public void requestForFile(DirectoryFile requestedFile){ 
         for(DirectoryNotification dirNotif : sourceList) {
             if(dirNotif.getDirectory().contains(requestedFile)) {

@@ -55,21 +55,11 @@ public class DirectoryNotification {
         }
     }
 
-    public boolean isTtlValid() {
-        return this.ttl > 0;
-    }
-
-    
-
     public List<DirectoryFile> getDirectory() {
         return directory;
     }
 
-    public void setDirectory(List<DirectoryFile> directory) {
-        this.directory = directory;
-    }
-
-    public void addSharedFiles(String device, FileManager fileManager) {
+    public void addSharedFiles(FileManager fileManager) {
         fileManager.syncFileMap();
         for (DirectoryFile entry : fileManager.getFiles()) {
             this.directory.add(entry);
@@ -82,10 +72,6 @@ public class DirectoryNotification {
 
     public void addIpAncestor(String ip) {
         this.ipAncestors.add(ip);
-    }
-
-    public void processNotification(String hostIP, FileManager fileManager) {
-        addSharedFiles(hostIP.split("\\.")[3], fileManager);
     }
 
     public String toJson() {

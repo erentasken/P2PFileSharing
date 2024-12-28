@@ -11,8 +11,6 @@ import java.util.Collections;
 import java.util.List;
 
 public class FileRequestNotification implements Serializable {
-    private static final int CHUNK_SIZE = 256 * 10; // 256 KB
-
     @JsonProperty("ttl")
     private int ttl;
 
@@ -58,7 +56,7 @@ public class FileRequestNotification implements Serializable {
 
     public List<Integer> getUnreceivedChunks() {
         long fileSize = Long.parseLong(file.getFileSize());
-        int totalChunks = (int) Math.ceil((double) fileSize / CHUNK_SIZE);
+        int totalChunks = (int) Math.ceil((double) fileSize / FileManager.CHUNK_SIZE);
         List<Integer> unreceivedChunks = new ArrayList<>();
         for (int i = 0; i < totalChunks; i++) {
             if (!receivedChunks.contains(i)) {
@@ -106,22 +104,4 @@ public class FileRequestNotification implements Serializable {
     public String toString() {
         return toJson();
     }
-
-    // public static void main(String[] args) {
-    //     DirectoryFile requestedFile = new DirectoryFile("10", "hello1.txt", "72004025f7fdedd51ac6ac478a8c85b89bf01e2df8cc204a6ff64e1421265a18", "11");
-    //     NetworkFile networkFile = new NetworkFile(new ArrayList<>(), null, requestedFile, -1);
-
-    //     FileRequestNotification fileRequestNotificationSent = new FileRequestNotification(
-    //         3, new ArrayList<>(), networkFile, new ArrayList<Integer>()
-    //     );
-
-    //     String jsonString = fileRequestNotificationSent.toJson();
-    //     System.out.println(jsonString);
-
-    //     try  {
-    //         FileRequestNotification fileRequestNotificationReceived = FileRequestNotification.parseJson(jsonString);
-    //     }catch (Exception e) {
-    //         e.printStackTrace();
-    //     }
-    // }
 }
