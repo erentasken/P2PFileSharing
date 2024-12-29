@@ -1,4 +1,4 @@
-package com.example;
+package com.models;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -6,6 +6,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.example.FileManager;
+import com.notification.DirectoryNotification;
 
 public class Peer {
 
@@ -50,6 +53,22 @@ public class Peer {
          finally {
             lock.unlock();
         }
+    }
+
+    public HashMap<String, String> getFiles() {
+        lock.lock();
+
+        HashMap<String, String> fileHashMap = new HashMap<>();
+        try {
+            sourceList.forEach(source -> {
+                source.getDirectory().forEach(file -> {
+                    fileHashMap.putIfAbsent(file.getFileHash(), file.getFileName());
+                });
+            });
+        } finally {
+            lock.unlock();
+        }
+        return fileHashMap;
     }
 
     public ArrayList<DirectoryFile> getRequestedFile(String fileName, String fileHash) { 

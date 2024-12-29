@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.models.DirectoryFile;
+import com.models.NetworkFile;
+
 public class FileManager {
     private final Map<String, ArrayList<String>> fileHashMap = new ConcurrentHashMap<>();
 

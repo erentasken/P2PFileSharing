@@ -1,10 +1,13 @@
-package com.example;
+package com.notification;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.models.DirectoryFile;
+import com.example.FileManager;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DirectoryNotification {
@@ -15,7 +18,13 @@ public class DirectoryNotification {
     @JsonIgnore
     private boolean ttlValid;
 
-    public DirectoryNotification(int ttl, List<String> ipAncestors, List<DirectoryFile> directory) {
+    public DirectoryNotification(List<DirectoryFile> directory) {
+        this.directory = directory;
+        this.ttl = 3;
+        this.ipAncestors = new ArrayList<>();
+    }
+
+    private DirectoryNotification(int ttl, List<String> ipAncestors, List<DirectoryFile> directory) {
         this.ttl = ttl;
         this.ipAncestors = ipAncestors;
         this.directory = directory;

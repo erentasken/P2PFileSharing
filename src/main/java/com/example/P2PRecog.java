@@ -19,6 +19,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.models.DirectoryFile;
+import com.models.NetworkFile;
+import com.models.Peer;
+import com.notification.DirectoryNotification;
+import com.notification.FileRequestNotification;
+
 
 public class P2PRecog {
     private static final int PORT = 9876;
@@ -29,17 +35,38 @@ public class P2PRecog {
 
     private static String hostIP;
 
-    private static DirectoryNotification notificationReceive;
-    private static DirectoryNotification notificationSend;
-    private static FileRequestNotification fileRequestNotificationSent;
-    private static FileRequestNotification fileRequestNotificationReceive;
-
     private static ConcurrentHashMap<String, ArrayList<Integer>> InProcessFileTracer = new ConcurrentHashMap<>();
 
     private static DatagramSocket sharedSocket;
 
     public static void main(String[] args) throws UnknownHostException, InterruptedException {
+        initialize(); // Connect
 
+        // List for reachable file.
+        peerManager.getFiles().forEach((f, h)->{ 
+            System.out.println("File: " + f + " Hash: " + h);
+        });
+
+
+        // Download File
+        //Test
+        Thread.sleep(1000);
+        if (hostIP.equals("10.23.1.20")) {
+            RequestForFile("fileToSend", "39de4e81171e5754cfe38e39bb415af31a98d0d703c087078925abb8541341af", null);
+        }
+        Thread.sleep(1000);
+        if (hostIP.equals("10.23.1.20")) {
+            RequestForFile("hello1.txt", "72004025f7fdedd51ac6ac478a8c85b89bf01e2df8cc204a6ff64e1421265a18", null);
+        }
+        //Test end
+
+
+        while(true) { 
+            Thread.sleep(1000);
+        }
+    }
+
+    public static void initialize() throws UnknownHostException, InterruptedException { 
         try {
             sharedSocket = new DatagramSocket(PORT);
         } catch (IOException e) {
@@ -54,42 +81,28 @@ public class P2PRecog {
         Thread listenBroadcast = new Thread(() -> listenBroadcast());
         listenBroadcast.start();
 
-        Thread tcpListenerThread = new Thread(()-> tcpConnectionRecevier());
-        tcpListenerThread.start();
-
         Thread sendBroadcastThread = new Thread(() -> DirectoryNotificationBroadcast());
         sendBroadcastThread.start();
 
-        //Test
-        Thread.sleep(1000);
-        if (hostIP.equals("10.23.1.20")) {
-            RequestForFile("fileToSend", "39de4e81171e5754cfe38e39bb415af31a98d0d703c087078925abb8541341af", null);
-            
-        }
-        //Test end
-
-        while(true) { 
-
-        }
+        Thread tcpListenerThread = new Thread(()-> tcpConnectionRecevier());
+        tcpListenerThread.start();
     }
 
-    //Connection required. Then can be triggered.
     public static void DirectoryNotificationBroadcast() {
         while (true) {
-            notificationSend = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
+            DirectoryNotification notificationSend = new DirectoryNotification(fileManager.getFiles());
             sendBroadcast(notificationSend);
             try {
-                Thread.sleep(5000);
+                Thread.sleep(2500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            notificationSend = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
+            notificationSend = new DirectoryNotification(fileManager.getFiles());
             sendBroadcast(notificationSend);
             
         }
     }
 
-    //Connection required. Then can be triggered.
     public static void RequestForFile(String fileName, String fileHash, ArrayList<Integer> receivedChunks) {
         if (receivedChunks == null) {
             receivedChunks = new ArrayList<>();
@@ -101,12 +114,11 @@ public class P2PRecog {
         requestedFileList.forEach((file)-> { 
             InProcessFileTracer.putIfAbsent(file.getFileHash(), new ArrayList<>());
             NetworkFile networkFile = new NetworkFile(new ArrayList<>(), null, file, -1);
-            fileRequestNotificationSent = new FileRequestNotification(3, new ArrayList<>(), networkFile, finalReceivedChunks);
+            FileRequestNotification fileRequestNotificationSent = new FileRequestNotification(3, new ArrayList<>(), networkFile, finalReceivedChunks);
             sendBroadcast(fileRequestNotificationSent);
         });
     }
 
-    //Connection trigger
     public static void listenBroadcast() {
         try {
             while (true) {
@@ -128,8 +140,9 @@ public class P2PRecog {
         }
     }
 
-    //Connection required. Then can be triggered.
     public static void FileRequestNotificationHandling(String message, String senderAddress) {
+        FileRequestNotification fileRequestNotificationReceive;
+
         try { 
             fileRequestNotificationReceive = FileRequestNotification.parseJson(message);
         } catch (Exception e) {
@@ -149,7 +162,7 @@ public class P2PRecog {
 
         if (fileManager.getFiles().contains(reqFile)){
 
-            System.out.println("Sending, file found in device : " + hostIP.split("\\.")[3]);
+            // System.out.println("Sending, file found in device : " + hostIP.split("\\.")[3]);
 
             List<Integer> unreceivedChunks = fileRequestNotificationReceive.getUnreceivedChunks();
             if (unreceivedChunks == null || unreceivedChunks.isEmpty()) {
@@ -213,6 +226,8 @@ public class P2PRecog {
 
                         int chunkNo = fileManager.saveChunks(file);
 
+                        System.out.println("Chunk received for file: " + file.getFileName() + " chunkNo: " + chunkNo);
+
                         if (chunkNo == -1) {
                             System.err.println("Error saving chunk to file");
                             continue;
@@ -220,14 +235,16 @@ public class P2PRecog {
 
                         InProcessFileTracer.get(file.getFileHash()).add(chunkNo);
 
-                        if (isChunkReceived) {
-                            System.out.println("chunk already taken " + " : " + file.getChunkNo());
-                        }
+                        int expectedChunkNum = (int) Math.ceil(Double.valueOf(file.getFileSize()) / FileManager.CHUNK_SIZE);
+
+                        System.out.println("Expected chunk number: " + expectedChunkNum +  " file size : " + file.getFileSize() + " chunk size : " + FileManager.CHUNK_SIZE);
+                        boolean isAllChunksReceived = InProcessFileTracer.get(file.getFileHash()).size() == expectedChunkNum;
 
                         ArrayList<Integer> receivedChunks = InProcessFileTracer.get(file.getFileHash());
-                        if (fileRequestNotificationSent.getUnreceivedChunks().isEmpty()) {
+                        if (isAllChunksReceived) { // means all chunks are received.
+                            System.out.println("All chunks received for file: " + file.getFileName());
                             InProcessFileTracer.remove(file.getFileHash());
-                        }else {
+                        }else { // means there are still chunks to be received.
                             RequestForFile(file.getFileName(), file.getFileHash(), receivedChunks);
                         }
                     }else if (nextIp != ""){ // means you should continue the chain.
@@ -246,6 +263,7 @@ public class P2PRecog {
     }
 
     public static void DirectoryNotificationHandling(String message, String senderAddress) {
+        DirectoryNotification notificationReceive;
         try { 
             notificationReceive = DirectoryNotification.parseJson(message);
         } catch (Exception e) {
