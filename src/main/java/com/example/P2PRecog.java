@@ -33,11 +33,7 @@ public class P2PRecog {
 
     private static Peer peerManager = new Peer(fileManager);
 
-    private static String hostIP;
-
     private static ConcurrentHashMap<String, ArrayList<Integer>> InProcessFileTracer = new ConcurrentHashMap<>();
-
-    private static DatagramSocket sharedSocket;
 
     public static void main(String[] args) throws UnknownHostException, InterruptedException {
         initialize(); // Connect
@@ -48,18 +44,18 @@ public class P2PRecog {
         });
 
 
-        // Download File
+        String hostIP = InetAddress.getLocalHost().getHostAddress();
+        // Download File trigger, inputs -> fileName, fileHash, null;
         //Test
         Thread.sleep(1000);
         if (hostIP.equals("10.23.1.20")) {
-            RequestForFile("fileToSend", "39de4e81171e5754cfe38e39bb415af31a98d0d703c087078925abb8541341af", null);
+            RequestForFile("fileToSend", "39de4e81171e5754cfe38e39bb415af31a98d0d703c087078925abb8541341af");
         }
         Thread.sleep(1000);
         if (hostIP.equals("10.23.1.20")) {
-            RequestForFile("hello1.txt", "72004025f7fdedd51ac6ac478a8c85b89bf01e2df8cc204a6ff64e1421265a18", null);
+            RequestForFile("hello1.txt", "72004025f7fdedd51ac6ac478a8c85b89bf01e2df8cc204a6ff64e1421265a18");
         }
         //Test end
-
 
         while(true) { 
             Thread.sleep(1000);
@@ -67,16 +63,8 @@ public class P2PRecog {
     }
 
     public static void initialize() throws UnknownHostException, InterruptedException { 
-        try {
-            sharedSocket = new DatagramSocket(PORT);
-        } catch (IOException e) {
-            System.err.println("Error initializing sharedSocket: " + e.getMessage());
-            e.printStackTrace();
-            return; // Exit the method if socket initialization fails
-        }
-        hostIP = InetAddress.getLocalHost().getHostAddress();
-        System.out.println("Host IP: " + hostIP);
-        fileManager = new FileManager(hostIP.split("\\.")[3]);
+        String hostDevice = InetAddress.getLocalHost().getHostAddress().split("\\.")[3];
+        fileManager = new FileManager(hostDevice);
 
         Thread listenBroadcast = new Thread(() -> listenBroadcast());
         listenBroadcast.start();
@@ -119,17 +107,37 @@ public class P2PRecog {
         });
     }
 
+    public static void RequestForFile(String fileName, String fileHash) {
+        ArrayList<DirectoryFile> requestedFileList = peerManager.getRequestedFile(fileName, fileHash);
+        requestedFileList.forEach((file)-> { 
+            InProcessFileTracer.putIfAbsent(file.getFileHash(), new ArrayList<>());
+            NetworkFile networkFile = new NetworkFile(new ArrayList<>(), null, file, -1);
+            FileRequestNotification fileRequestNotificationSent = new FileRequestNotification(3, new ArrayList<>(), networkFile, new ArrayList<>());
+            sendBroadcast(fileRequestNotificationSent);
+        });
+    }
+
     public static void listenBroadcast() {
+        DatagramSocket socket;
+        try {
+            socket = new DatagramSocket(PORT);
+        } catch (IOException e) {
+            System.err.println("Error initializing sharedSocket: " + e.getMessage());
+            e.printStackTrace();
+            return; // Exit the method if socket initialization fails
+        }
         try {
             while (true) {
                 byte[] buffer = new byte[1024];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-                sharedSocket.receive(packet);
+                socket.receive(packet);
                 String message = new String(packet.getData(), 0, packet.getLength());
                 String senderAddress = packet.getAddress().getHostAddress();
 
-                if (!senderAddress.split("\\.")[3].equals(hostIP.split("\\.")[3])) {
+                String hostDevice = InetAddress.getLocalHost().getHostAddress().split("\\.")[3];
+
+                if (!senderAddress.split("\\.")[3].equals(hostDevice)) {
                     // Process notifications
                     DirectoryNotificationHandling(message, senderAddress);
                     FileRequestNotificationHandling(message, senderAddress);
@@ -138,6 +146,7 @@ public class P2PRecog {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        socket.close();
     }
 
     public static void FileRequestNotificationHandling(String message, String senderAddress) {
