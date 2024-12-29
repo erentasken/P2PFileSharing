@@ -11,7 +11,7 @@ public class Peer {
 
     private List<DirectoryNotification> sourceList;
     FileManager fileManager;
-    private final Lock lock = new ReentrantLock();  // Mutex lock to synchronize access to sourceList
+    private final Lock lock = new ReentrantLock();
 
     public Peer(FileManager fileManager) {
         this.sourceList = new ArrayList<>();

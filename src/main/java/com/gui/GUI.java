@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class GUI {
-
     public static void main(String[] args) throws HeadlessException, UnknownHostException, InterruptedException {
         P2PRecog p2pRecog = P2PRecog.getInstance();
 
@@ -108,7 +107,7 @@ public class GUI {
         excludeFilesPanel.add(new JLabel("Exclude files matching these masks:"));
         JTextField excludeField = new JTextField(20);
         JButton addExcludeButton = new JButton("Add");
-        JButton deleteExcludeButton = new JButton("Del");
+        JButton deleteExcludeButton = new JButton("Delete");
         excludeFilesPanel.add(excludeField);
         excludeFilesPanel.add(addExcludeButton);
         excludeFilesPanel.add(deleteExcludeButton);
@@ -141,7 +140,6 @@ public class GUI {
 
         mainPanel.add(settingsPanel);
 
-        // Downloading files logic
         JPanel downloadingPanel = new JPanel(new BorderLayout());
         downloadingPanel.setBorder(BorderFactory.createTitledBorder("Downloading files"));
         JTextArea downloadingArea = new JTextArea(5, 40);
@@ -168,10 +166,7 @@ public class GUI {
                 }
                 dotCount.incrementAndGet();
 
-                String progress = String.format(" %d/%d chunks received (%s)", 
-                                                fileProgress.receivedChunks, 
-                                                fileProgress.totalChunks,
-                                                fileProgress.calculatePercentage());
+                String progress = String.format(" %d/%d chunks received (%s)", fileProgress.receivedChunks, fileProgress.totalChunks, fileProgress.calculatePercentage());
                 displayText.append(progress).append("\n");
             });
 
@@ -187,35 +182,6 @@ public class GUI {
         foundFilesList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane listScroller = new JScrollPane(foundFilesList);
         foundFilesPanel.add(listScroller, BorderLayout.CENTER);
-
-        // foundFilesList.addListSelectionListener(e -> {
-        //     if (!e.getValueIsAdjusting() && foundFilesList.getSelectedValue() != null) {
-        //         String selectedEntry = foundFilesList.getSelectedValue();
-        //         String[] parts = selectedEntry.split("→");
-
-        //         if (parts.length == 2) {
-        //             String fileName = parts[0].trim();
-        //             String fileHash = parts[1].trim();
-        //             if (!fileHash.contains("•")) {
-
-
-        //                 boolean isExcluded = excludedFiles.stream().anyMatch(pattern -> {
-        //                     String regex = pattern.replace(".", "\\.").replace("*", ".*");
-        //                     return fileName.matches(regex);
-        //                 });
-            
-        //                 if (isExcluded) {
-        //                     JOptionPane.showMessageDialog(frame, "File is excluded from download.");
-        //                     return;
-        //                 }
-            
-
-        //                 p2pRecog.RequestForFile(fileName, fileHash);
-        //                 JOptionPane.showMessageDialog(frame, "Requesting file: " + fileName + " with hash: " + fileHash);
-        //             }
-        //         }
-        //     }
-        // });
 
         foundFilesList.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override

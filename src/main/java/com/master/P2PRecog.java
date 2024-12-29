@@ -68,7 +68,6 @@ public class P2PRecog {
         
     }
 
-    // Public method to get the single instance of the class
     public static P2PRecog getInstance() throws UnknownHostException, InterruptedException {
         if (instance == null) {
             synchronized (P2PRecog.class) {
@@ -279,7 +278,7 @@ public class P2PRecog {
 
     public class FileProgress { 
         public String fileName;
-        public String fileHash; // You need fileHash to uniquely identify the file
+        public String fileHash;
         public int totalChunks;
         public int receivedChunks;
 
@@ -290,7 +289,6 @@ public class P2PRecog {
             this.receivedChunks = receivedChunks;
         }
 
-        // Corrected method to calculate percentage of chunks received
         public String calculatePercentage() {
             if (totalChunks == 0) {
                 return "0%"; // Avoid division by zero
