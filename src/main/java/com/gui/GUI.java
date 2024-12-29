@@ -1,32 +1,27 @@
 package com.gui;
 
 import javax.swing.*;
-
 import com.master.P2PRecog;
-
 import java.awt.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class GUI {
 
-    
-
     public static void main(String[] args) throws HeadlessException, UnknownHostException, InterruptedException {
         P2PRecog p2pRecog = P2PRecog.getInstance();
-        
-        // Create the main frame
-        JFrame frame = new JFrame("Device : " + InetAddress.getLocalHost().getHostAddress().split("\\.")[3]);
+
+        JFrame frame = new JFrame("Device: " + InetAddress.getLocalHost().getHostAddress().split("\\.")[3]);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 700);
+        frame.setSize(750, 800);
         frame.setLayout(new BorderLayout());
 
-        // Create the menu bar
         JMenuBar menuBar = new JMenuBar();
 
-        // Create "Files" menu
         JMenu filesMenu = new JMenu("Files");
         JMenuItem connectItem = new JMenuItem("Connect");
         JMenuItem disconnectItem = new JMenuItem("Disconnect");
@@ -35,21 +30,15 @@ public class GUI {
             new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() throws Exception {
-                    
                     System.out.println("Connecting to the overlay network...");
-
                     p2pRecog.Connect();
-
-
                     return null;
                 }
             }.execute();
         });
 
         disconnectItem.addActionListener(e -> {
-            
             System.out.println("Disconnecting from the overlay network...");
-
             p2pRecog.Disconnect();
         });
 
@@ -58,6 +47,11 @@ public class GUI {
         menuBar.add(filesMenu);
 
         JMenu helpMenu = new JMenu("Help");
+        JMenuItem aboutItem = new JMenuItem("About");
+        aboutItem.addActionListener(e -> {
+            JOptionPane.showMessageDialog(frame, "Developed by Eren TASKEN with the student ID 20210702054.");
+        });
+        helpMenu.add(aboutItem);
         menuBar.add(helpMenu);
 
         frame.setJMenuBar(menuBar);
@@ -102,14 +96,13 @@ public class GUI {
             }
         });
 
-        
-
         JPanel settingsPanel = new JPanel();
         settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
         settingsPanel.setBorder(BorderFactory.createTitledBorder("Settings"));
 
-        JCheckBox checkNewFilesBox = new JCheckBox("Check new files only in the root");
-        settingsPanel.add(checkNewFilesBox);
+        List<String> excludedFiles = new ArrayList<>();
+        DefaultListModel<String> excludeListModel = new DefaultListModel<>();
+        JList<String> excludeFilesList = new JList<>(excludeListModel);
 
         JPanel excludeFilesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         excludeFilesPanel.add(new JLabel("Exclude files matching these masks:"));
@@ -121,18 +114,45 @@ public class GUI {
         excludeFilesPanel.add(deleteExcludeButton);
         settingsPanel.add(excludeFilesPanel);
 
+        excludeFilesList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane excludeFilesScroller = new JScrollPane(excludeFilesList);
+        settingsPanel.add(excludeFilesScroller);
+
+        addExcludeButton.addActionListener(e -> {
+            String excludePattern = excludeField.getText().trim();
+            if (!excludePattern.isEmpty() && !excludedFiles.contains(excludePattern)) {
+                excludedFiles.add(excludePattern);
+                excludeListModel.addElement(excludePattern);
+                excludeField.setText("");
+            } else {
+                JOptionPane.showMessageDialog(frame, "Please enter a valid and unique exclude pattern.");
+            }
+        });
+
+        deleteExcludeButton.addActionListener(e -> {
+            String selectedExclude = excludeFilesList.getSelectedValue();
+            if (selectedExclude != null) {
+                excludedFiles.remove(selectedExclude);
+                excludeListModel.removeElement(selectedExclude);
+            } else {
+                JOptionPane.showMessageDialog(frame, "Please select an exclusion pattern to delete.");
+            }
+        });
+
         mainPanel.add(settingsPanel);
 
+        // Downloading files logic
         JPanel downloadingPanel = new JPanel(new BorderLayout());
         downloadingPanel.setBorder(BorderFactory.createTitledBorder("Downloading files"));
         JTextArea downloadingArea = new JTextArea(5, 40);
         downloadingArea.setEditable(false);
         downloadingPanel.add(new JScrollPane(downloadingArea), BorderLayout.CENTER);
         mainPanel.add(downloadingPanel);
+
         AtomicInteger dotCount = new AtomicInteger(0);
         Timer timer = new Timer(1000, e -> {
             StringBuilder displayText = new StringBuilder();
-            downloadingArea.setText(""); // Clear the area before appending new text
+            downloadingArea.setText("");
 
             P2PRecog.fileProgressMap.forEach((fileHash, fileProgress) -> {
                 displayText.append(fileProgress.fileName);
@@ -152,58 +172,95 @@ public class GUI {
                                                 fileProgress.receivedChunks, 
                                                 fileProgress.totalChunks,
                                                 fileProgress.calculatePercentage());
-                displayText.append(progress);
-
-                displayText.append("\n");
+                displayText.append(progress).append("\n");
             });
 
             downloadingArea.append(displayText.toString());
         });
         timer.start();
 
-
+        // Found files logic
         JPanel foundFilesPanel = new JPanel(new BorderLayout());
         foundFilesPanel.setBorder(BorderFactory.createTitledBorder("Found files"));
         DefaultListModel<String> listModel = new DefaultListModel<>();
         JList<String> foundFilesList = new JList<>(listModel);
         foundFilesList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        foundFilesList.setLayoutOrientation(JList.VERTICAL);
-        foundFilesList.setVisibleRowCount(-1);
         JScrollPane listScroller = new JScrollPane(foundFilesList);
         foundFilesPanel.add(listScroller, BorderLayout.CENTER);
 
-        foundFilesList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && foundFilesList.getSelectedValue() != null) {
-                String selectedEntry = foundFilesList.getSelectedValue();
-                selectedEntry = selectedEntry.trim();
-                String[] parts = selectedEntry.split("→");
-                
-                if (parts.length == 2) {
-                    if (parts[1].contains("•")){ 
-                        parts[1] = parts[1].substring(0, parts[1].indexOf("•"));
+        // foundFilesList.addListSelectionListener(e -> {
+        //     if (!e.getValueIsAdjusting() && foundFilesList.getSelectedValue() != null) {
+        //         String selectedEntry = foundFilesList.getSelectedValue();
+        //         String[] parts = selectedEntry.split("→");
+
+        //         if (parts.length == 2) {
+        //             String fileName = parts[0].trim();
+        //             String fileHash = parts[1].trim();
+        //             if (!fileHash.contains("•")) {
+
+
+        //                 boolean isExcluded = excludedFiles.stream().anyMatch(pattern -> {
+        //                     String regex = pattern.replace(".", "\\.").replace("*", ".*");
+        //                     return fileName.matches(regex);
+        //                 });
+            
+        //                 if (isExcluded) {
+        //                     JOptionPane.showMessageDialog(frame, "File is excluded from download.");
+        //                     return;
+        //                 }
+            
+
+        //                 p2pRecog.RequestForFile(fileName, fileHash);
+        //                 JOptionPane.showMessageDialog(frame, "Requesting file: " + fileName + " with hash: " + fileHash);
+        //             }
+        //         }
+        //     }
+        // });
+
+        foundFilesList.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) { // Detect double-click
+                    String selectedEntry = foundFilesList.getSelectedValue();
+                    if (selectedEntry != null) {
+                        String[] parts = selectedEntry.split("→");
+        
+                        if (parts.length == 2) {
+                            String fileName = parts[0].trim();
+                            String fileHash = parts[1].trim();
+                            if (!fileHash.contains("•")) {
+                                // Check if file matches any exclusion pattern
+                                boolean isExcluded = excludedFiles.stream().anyMatch(pattern -> {
+                                    String regex = pattern.replace(".", "\\.").replace("*", ".*");
+                                    return fileName.matches(regex);
+                                });
+        
+                                if (isExcluded) {
+                                    JOptionPane.showMessageDialog(frame, "File is excluded from download.");
+                                    return;
+                                }
+        
+                                p2pRecog.RequestForFile(fileName, fileHash);
+                                JOptionPane.showMessageDialog(frame, "Requesting file: " + fileName + " with hash: " + fileHash);
+                            }
+                        }
                     }
-
-                    String fileName = parts[0]; // Remove "File: " prefix
-                    String fileHash = parts[1];
-
-                    p2pRecog.RequestForFile(fileName, fileHash);
-
-                    JOptionPane.showMessageDialog(frame, "Requesting file: " + fileName + " with hash: " + fileHash);
                 }
             }
         });
-        mainPanel.add(foundFilesPanel);
+        
 
+        mainPanel.add(foundFilesPanel);
 
         JButton searchButton = new JButton("Search");
         searchButton.addActionListener(e -> {
             HashMap<String, String> foundFiles;
             try {
                 foundFiles = p2pRecog.GetReachableFiles();
-                listModel.clear(); // Clear existing entries
+                listModel.clear();
                 if (foundFiles != null && !foundFiles.isEmpty()) {
                     for (var entry : foundFiles.entrySet()) {
-                        listModel.addElement(entry.getValue()  + "→" + entry.getKey());
+                        listModel.addElement(entry.getValue() + "→" + entry.getKey());
                     }
                 } else {
                     JOptionPane.showMessageDialog(frame, "No files found.");
@@ -211,7 +268,6 @@ public class GUI {
             } catch (InterruptedException e1) {
                 e1.printStackTrace();
             }
-            
         });
 
         mainPanel.add(searchButton);
