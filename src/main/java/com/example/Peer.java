@@ -31,7 +31,6 @@ public class Peer {
 
     public void addSource(DirectoryNotification notification) {
         lock.lock();
-
         boolean exists = false;
 
         try {
@@ -54,6 +53,7 @@ public class Peer {
     }
 
     public ArrayList<DirectoryFile> getRequestedFile(String fileName, String fileHash) { 
+        lock.lock();
         ArrayList<DirectoryFile> requestedFiles = new ArrayList<>();
         sourceList.forEach((s)-> {
             s.getDirectory().forEach((file)->{ 
@@ -62,6 +62,7 @@ public class Peer {
                 } 
             });
         });
+        lock.unlock();
         return requestedFiles;
     }
 

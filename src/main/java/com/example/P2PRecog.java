@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -39,7 +38,6 @@ public class P2PRecog {
 
     private static DatagramSocket sharedSocket;
 
-
     public static void main(String[] args) throws UnknownHostException, InterruptedException {
 
         try {
@@ -49,12 +47,8 @@ public class P2PRecog {
             e.printStackTrace();
             return; // Exit the method if socket initialization fails
         }
-        
-
         hostIP = InetAddress.getLocalHost().getHostAddress();
-
         System.out.println("Host IP: " + hostIP);
-
         fileManager = new FileManager(hostIP.split("\\.")[3]);
 
         Thread listenBroadcast = new Thread(() -> listenBroadcast());
@@ -63,51 +57,39 @@ public class P2PRecog {
         Thread tcpListenerThread = new Thread(()-> tcpConnectionRecevier());
         tcpListenerThread.start();
 
-        //Test
-        Thread sendBroadcastThread = new Thread(
-            () -> {
-                notificationSend = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
-                sendBroadcast(notificationSend); 
-
-                //Test
-                if (hostIP.equals("10.23.1.10")) {
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    RequestForFile("fileToSend", "39de4e81171e5754cfe38e39bb415af31a98d0d703c087078925abb8541341af", null);
-                }
-
-                while (true ) { 
-                    notificationSend = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
-                    sendBroadcast(notificationSend);
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-
-            });
+        Thread sendBroadcastThread = new Thread(() -> DirectoryNotificationBroadcast());
         sendBroadcastThread.start();
-        //
 
-        // while(true) { 
+        //Test
+        Thread.sleep(1000);
+        if (hostIP.equals("10.23.1.20")) {
+            RequestForFile("fileToSend", "39de4e81171e5754cfe38e39bb415af31a98d0d703c087078925abb8541341af", null);
+            
+        }
+        //Test end
 
-        // }
+        while(true) { 
 
-
-        // Test
-        // while ( true ) { 
-        //     if (hostIP.equals("10.23.1.10")) { 
-        //         peerManager.printSources();
-        //         Thread.sleep(5000);
-        //     }
-        // }
+        }
     }
 
+    //Connection required. Then can be triggered.
+    public static void DirectoryNotificationBroadcast() {
+        while (true) {
+            notificationSend = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
+            sendBroadcast(notificationSend);
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            notificationSend = new DirectoryNotification(3, new ArrayList<>(), fileManager.getFiles());
+            sendBroadcast(notificationSend);
+            
+        }
+    }
+
+    //Connection required. Then can be triggered.
     public static void RequestForFile(String fileName, String fileHash, ArrayList<Integer> receivedChunks) {
         if (receivedChunks == null) {
             receivedChunks = new ArrayList<>();
@@ -115,7 +97,7 @@ public class P2PRecog {
 
         final ArrayList<Integer> finalReceivedChunks = receivedChunks;
 
-        ArrayList<DirectoryFile> requestedFileList = peerManager.getRequestedFile("fileToSend", "39de4e81171e5754cfe38e39bb415af31a98d0d703c087078925abb8541341af");
+        ArrayList<DirectoryFile> requestedFileList = peerManager.getRequestedFile(fileName, fileHash);
         requestedFileList.forEach((file)-> { 
             InProcessFileTracer.putIfAbsent(file.getFileHash(), new ArrayList<>());
             NetworkFile networkFile = new NetworkFile(new ArrayList<>(), null, file, -1);
@@ -124,6 +106,7 @@ public class P2PRecog {
         });
     }
 
+    //Connection trigger
     public static void listenBroadcast() {
         try {
             while (true) {
@@ -145,7 +128,7 @@ public class P2PRecog {
         }
     }
 
-
+    //Connection required. Then can be triggered.
     public static void FileRequestNotificationHandling(String message, String senderAddress) {
         try { 
             fileRequestNotificationReceive = FileRequestNotification.parseJson(message);
@@ -166,6 +149,8 @@ public class P2PRecog {
 
         if (fileManager.getFiles().contains(reqFile)){
 
+            System.out.println("Sending, file found in device : " + hostIP.split("\\.")[3]);
+
             List<Integer> unreceivedChunks = fileRequestNotificationReceive.getUnreceivedChunks();
             if (unreceivedChunks == null || unreceivedChunks.isEmpty()) {
                 System.out.println("No chunks to process");
@@ -182,7 +167,6 @@ public class P2PRecog {
             String nextIp = networkFile.popIp();
 
             if (nextIp !="") { 
-                // System.out.println("Unreceived Chunks: " + unreceivedChunks);
                 tcpConnectionSend(nextIp, networkFile);
             }
 
@@ -213,7 +197,6 @@ public class P2PRecog {
                 try (Socket socket = serverSocket.accept();
                      InputStream inputStream = socket.getInputStream();
                      ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)) {
-        
 
                     NetworkFile file = (NetworkFile) objectInputStream.readObject();
 
@@ -240,8 +223,6 @@ public class P2PRecog {
                         if (isChunkReceived) {
                             System.out.println("chunk already taken " + " : " + file.getChunkNo());
                         }
-
-                        System.out.println("Chunk received: " + file.getChunkNo() + " from " + socket.getInetAddress().getHostAddress());
 
                         ArrayList<Integer> receivedChunks = InProcessFileTracer.get(file.getFileHash());
                         if (fileRequestNotificationSent.getUnreceivedChunks().isEmpty()) {

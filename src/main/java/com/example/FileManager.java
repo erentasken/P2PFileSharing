@@ -20,9 +20,20 @@ public class FileManager {
 
     public static int CHUNK_SIZE = 256 * 10; // 256 KB
 
+    private static String filePath = "./sharedFiles";
+    private static String destinationFilePath = "./sharedFiles";
+
     public FileManager(String device) {
         this.device = device;
         syncFileMap();
+    }
+
+    public void setFilePath(String filePath) {
+        FileManager.filePath = filePath;
+    }
+
+    public void setDestinationFilePath(String destinationFilePath) {
+        FileManager.destinationFilePath = destinationFilePath;
     }
 
     public static String calculateSHA256(byte[] fileBytes) throws NoSuchAlgorithmException {
@@ -39,8 +50,7 @@ public class FileManager {
     }
 
     public void syncFileMap() {
-        String directoryPath = "./sharedFiles";
-        Path dirPath = Path.of(directoryPath).toAbsolutePath().normalize();
+        Path dirPath = Path.of(filePath).toAbsolutePath().normalize();
         File directory = dirPath.toFile();
 
         if (!directory.exists() || !directory.isDirectory()) {
@@ -71,11 +81,15 @@ public class FileManager {
 
     }
 
-    public int saveChunks(NetworkFile file) { 
-        String filePath = "./sharedFiles" + "/" + file.getFileName();
+    public int saveChunks(NetworkFile file) {
+        Path dirPath = Path.of(destinationFilePath).toAbsolutePath().normalize();
+        File directory = dirPath.toFile();
 
+        if (!directory.exists() || !directory.isDirectory()) {
+            directory.mkdirs();
+        }
 
-        try (RandomAccessFile rAF = new RandomAccessFile(filePath, "rw")) {
+        try (RandomAccessFile rAF = new RandomAccessFile(destinationFilePath + "/" + file.getFileName(), "rw")) {
             long length = file.getDataSize();
             int chunkNo = file.getChunkNo();
             byte[] chunkData = file.getData();
@@ -111,8 +125,7 @@ public class FileManager {
     }
 
     public byte[] getChunk(String fileName, String fileHash, int chunkIndex) {
-        String directoryPath = "./sharedFiles";
-        Path dirPath = Path.of(directoryPath);
+        Path dirPath = Path.of(filePath);
         File directory = dirPath.toFile();
     
         if (!directory.exists() || !directory.isDirectory()) {
