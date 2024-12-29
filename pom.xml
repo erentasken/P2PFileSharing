@@ -84,7 +84,6 @@
                 <archive>
                     <manifest>
                         <mainClass>com.gui.GUI</mainClass>
-                        <!-- <mainClass>com.example.P2PRecog</mainClass> -->
                     </manifest>
                 </archive>
                 <descriptorRefs>
@@ -110,7 +109,6 @@
                 <archive>
                     <manifestEntries>
                         <Main-Class>com.gui.GUI</Main-Class>
-                        <!-- <Main-Class>com.example.P2PRecog</Main-Class> -->
                     </manifestEntries>
                 </archive>
             </configuration>

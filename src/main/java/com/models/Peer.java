@@ -1,13 +1,10 @@
 package com.models;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.example.FileManager;
+import com.master.FileManager;
 import com.notification.DirectoryNotification;
 
 public class Peer {

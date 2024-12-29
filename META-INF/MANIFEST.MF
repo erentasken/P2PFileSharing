@@ -2,5 +2,5 @@ Manifest-Version: 1.0
 Created-By: Apache Maven 3.9.9
 Built-By: eren
 Build-Jdk: 21.0.5
-Main-Class: com.example.P2PRecog
+Main-Class: com.master.P2PRecog
 

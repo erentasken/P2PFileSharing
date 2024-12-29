@@ -1,10 +1,10 @@
 package com.notification;
 
-import com.example.FileManager;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.master.FileManager;
 import com.models.DirectoryFile;
 import com.models.NetworkFile;
 

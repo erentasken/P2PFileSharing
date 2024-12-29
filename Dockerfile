@@ -1,15 +1,3 @@
-# FROM openjdk:11-jre-slim
-
-# WORKDIR /app
-
-# COPY target/file-management-1.0-SNAPSHOT-jar-with-dependencies.jar /app/file-management.jar
-
-# COPY sharedFiles /app/sharedFiles
-
-# EXPOSE 9876
-
-# ENTRYPOINT ["java", "-jar", "/app/file-management.jar"]
-
 FROM openjdk:11
 
 RUN apt-get update && apt-get install -y \
