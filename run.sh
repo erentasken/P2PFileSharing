@@ -1,1 +1,1 @@
-mvn clean install && docker compose build && docker compose up
+mvn clean install && sudo docker compose build && sudo docker compose up

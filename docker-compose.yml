@@ -1,4 +1,4 @@
-version: "3"
+version: '3.9'
 
 services:
   node1:
@@ -9,8 +9,10 @@ services:
         ipv4_address: 10.23.1.10
     volumes:
       - ./sharedFiles/node1:/app/sharedFiles
+      - /tmp/.X11-unix:/tmp/.X11-unix
     environment:
       - JAVA_OPTS=-Dfile.encoding=UTF-8
+      - DISPLAY=${DISPLAY}
 
   node2:
     build: .
@@ -22,8 +24,10 @@ services:
         ipv4_address: 10.23.1.20
     volumes:
       - ./sharedFiles/node2:/app/sharedFiles
+      - /tmp/.X11-unix:/tmp/.X11-unix
     environment:
       - JAVA_OPTS=-Dfile.encoding=UTF-8
+      - DISPLAY=${DISPLAY}
 
   node3:
     build: .
@@ -35,8 +39,10 @@ services:
         ipv4_address: 10.23.2.30
     volumes:
       - ./sharedFiles/node3:/app/sharedFiles
+      - /tmp/.X11-unix:/tmp/.X11-unix
     environment:
       - JAVA_OPTS=-Dfile.encoding=UTF-8
+      - DISPLAY=${DISPLAY}
 
   node4:
     build: .
@@ -48,8 +54,10 @@ services:
         ipv4_address: 10.23.3.40
     volumes:
       - ./sharedFiles/node4:/app/sharedFiles
+      - /tmp/.X11-unix:/tmp/.X11-unix
     environment:
       - JAVA_OPTS=-Dfile.encoding=UTF-8
+      - DISPLAY=${DISPLAY}
 
   node5:
     build: .
@@ -59,8 +67,10 @@ services:
         ipv4_address: 10.23.5.50
     volumes:
       - ./sharedFiles/node5:/app/sharedFiles
+      - /tmp/.X11-unix:/tmp/.X11-unix
     environment:
       - JAVA_OPTS=-Dfile.encoding=UTF-8
+      - DISPLAY=${DISPLAY}
 
 networks:
   network1:
