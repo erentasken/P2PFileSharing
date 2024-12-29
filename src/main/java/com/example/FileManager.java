@@ -21,7 +21,7 @@ public class FileManager {
 
     private String device;
 
-    public static int CHUNK_SIZE = 256 * 10; // 256 KB
+    public static int CHUNK_SIZE = 256 * 1000; // 256 KB
 
     private static String filePath = "./sharedFiles";
     private static String destinationFilePath = "./sharedFiles";

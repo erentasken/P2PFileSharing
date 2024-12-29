@@ -19,17 +19,6 @@ public class Peer {
     public Peer(FileManager fileManager) {
         this.sourceList = new ArrayList<>();
         this.fileManager = fileManager;
-
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-        scheduler.scheduleAtFixedRate(() -> {
-            lock.lock();
-            try {
-                sourceList.clear();
-            } finally {
-                lock.unlock();
-            }
-        }, 0, 7, TimeUnit.SECONDS);
     }
 
     public void addSource(DirectoryNotification notification) {
@@ -55,9 +44,11 @@ public class Peer {
         }
     }
 
-    public HashMap<String, String> getFiles() {
-        lock.lock();
+    public HashMap<String, String> getFiles() throws InterruptedException {
+        sourceList.clear();
+        Thread.sleep(3000);
 
+        lock.lock();
         HashMap<String, String> fileHashMap = new HashMap<>();
         try {
             sourceList.forEach(source -> {

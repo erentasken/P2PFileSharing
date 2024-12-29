@@ -5,19 +5,27 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
-    <artifactId>file-management</artifactId>
+    <groupId>com.gui</groupId>
+    <artifactId>cse471</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>File Management</name>
-    <description>File management system with SHA-256 file hashing and JSON notification generation</description>
+    <name>Distributed File Sharing</name>
+    <description>Distributed File Sharing Project</description>
 
     <!-- Set the Java version to 11 -->
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
     </properties>
+
+    <repositories>
+        <!-- Add OpenJFX repository -->
+        <repository>
+            <id>openjfx-repo</id>
+            <url>https://openjfx.io/maven/</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <!-- Jackson Databind for JSON processing -->
@@ -40,14 +48,18 @@
             <artifactId>jackson-annotations</artifactId>
             <version>2.15.2</version>
         </dependency>
-
-        <!-- JUnit for testing -->
+        <!-- Java Swing (GUI) is part of the JDK, so no need for additional dependencies -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
-            <scope>test</scope>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.30</version>
         </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -71,18 +83,19 @@
             <configuration>
                 <archive>
                     <manifest>
-                        <mainClass>com.example.P2PRecog</mainClass> <!-- Make sure this is correct -->
+                        <mainClass>com.gui.GUI</mainClass>
+                        <!-- <mainClass>com.example.P2PRecog</mainClass> -->
                     </manifest>
                 </archive>
                 <descriptorRefs>
-                    <descriptorRef>jar-with-dependencies</descriptorRef> <!-- Ensures dependencies are included -->
+                    <descriptorRef>jar-with-dependencies</descriptorRef>
                 </descriptorRefs>
             </configuration>
             <executions>
                 <execution>
                     <phase>package</phase>
                     <goals>
-                        <goal>single</goal> <!-- Create the jar with dependencies -->
+                        <goal>single</goal>
                     </goals>
                 </execution>
             </executions>
@@ -96,7 +109,8 @@
             <configuration>
                 <archive>
                     <manifestEntries>
-                        <Main-Class>com.example.P2PRecog</Main-Class> <!-- Ensure this is the right class -->
+                        <Main-Class>com.gui.GUI</Main-Class>
+                        <!-- <Main-Class>com.example.P2PRecog</Main-Class> -->
                     </manifestEntries>
                 </archive>
             </configuration>
