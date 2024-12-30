@@ -25,6 +25,12 @@ public class GUI {
         JMenuItem connectItem = new JMenuItem("Connect");
         JMenuItem disconnectItem = new JMenuItem("Disconnect");
 
+        JLabel statusLabel = new JLabel("Status: Disconnected", SwingConstants.CENTER);
+        statusLabel.setOpaque(true);
+        statusLabel.setBackground(Color.RED);
+        statusLabel.setForeground(Color.WHITE);
+        frame.add(statusLabel, BorderLayout.NORTH);
+
         connectItem.addActionListener(e -> {
             new SwingWorker<Void, Void>() {
                 @Override
@@ -36,9 +42,36 @@ public class GUI {
             }.execute();
         });
 
+        connectItem.addActionListener(e -> {
+            new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    Thread.sleep(1000);
+                    boolean isConnected = p2pRecog.isConnected();
+                    if (isConnected) {
+                        statusLabel.setText("Status: Connected");
+                        statusLabel.setBackground(Color.GREEN);
+                    } else {
+                        statusLabel.setText("Status: Disconnected");
+                        statusLabel.setBackground(Color.RED);
+                    }
+
+                    return null;
+                }
+            }.execute();
+        });
+
         disconnectItem.addActionListener(e -> {
             System.out.println("Disconnecting from the overlay network...");
             p2pRecog.Disconnect();
+            boolean isConnected = p2pRecog.isConnected();
+            if (isConnected) {
+                statusLabel.setText("Status: Connected");
+                statusLabel.setBackground(Color.GREEN);
+            } else {
+                statusLabel.setText("Status: Disconnected");
+                statusLabel.setBackground(Color.RED);
+            }
         });
 
         filesMenu.add(connectItem);
@@ -61,7 +94,7 @@ public class GUI {
 
         JPanel sharedFolderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         sharedFolderPanel.setBorder(BorderFactory.createTitledBorder("Root of the P2P shared folder"));
-        JTextField sharedFolderField = new JTextField(30);
+        JTextField sharedFolderField = new JTextField("./sharedFile",30);
         JButton sharedFolderButton = new JButton("Set");
         sharedFolderPanel.add(sharedFolderField);
         sharedFolderPanel.add(sharedFolderButton);
@@ -79,7 +112,7 @@ public class GUI {
 
         JPanel destinationFolderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         destinationFolderPanel.setBorder(BorderFactory.createTitledBorder("Destination folder"));
-        JTextField destinationFolderField = new JTextField(30);
+        JTextField destinationFolderField = new JTextField("./sharedFile", 30);
         JButton destinationFolderButton = new JButton("Set");
         destinationFolderPanel.add(destinationFolderField);
         destinationFolderPanel.add(destinationFolderButton);
@@ -174,7 +207,6 @@ public class GUI {
         });
         timer.start();
 
-        // Found files logic
         JPanel foundFilesPanel = new JPanel(new BorderLayout());
         foundFilesPanel.setBorder(BorderFactory.createTitledBorder("Found files"));
         DefaultListModel<String> listModel = new DefaultListModel<>();

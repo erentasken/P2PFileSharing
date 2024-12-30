@@ -79,6 +79,10 @@ public class P2PRecog {
         return instance;
     }
 
+    public Boolean isConnected() { 
+        return connected;
+    }
+
 
     public ConcurrentHashMap<String, FileProgress> getFileProgress() {
         return fileProgressMap;
